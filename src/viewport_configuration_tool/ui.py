@@ -128,6 +128,18 @@ class CursesGUI:
         text = text.encode('ascii', 'ignore').decode('ascii')
         return text
 
+    def safe_addstr(self, y: int, x: int, text: str, attr: int = 0) -> bool:
+        """Safely add string to screen, catching curses errors."""
+        try:
+            if attr:
+                self.stdscr.addstr(y, x, text, attr)
+            else:
+                self.stdscr.addstr(y, x, text)
+            return True
+        except curses.error:
+            # Silently ignore curses errors (usually from writing outside bounds)
+            return False
+
     def save_config(self) -> bool:
         """Save current system configurations to JSON file."""
         try:
@@ -994,10 +1006,10 @@ class CursesGUI:
 
                     if idx == selected:
                         self.stdscr.attron(curses.color_pair(1) | curses.A_BOLD)
-                        self.stdscr.addstr(y, 0, f">{line}"[:self.width])
+                        self.safe_addstr(y, 0, f">{line}"[:self.width])
                         self.stdscr.attroff(curses.color_pair(1) | curses.A_BOLD)
                     else:
-                        self.stdscr.addstr(y, 0, f" {line}"[:self.width])
+                        self.safe_addstr(y, 0, f" {line}"[:self.width])
 
                     y += 1
 
@@ -1023,13 +1035,13 @@ class CursesGUI:
                     # Show game details
                     self.stdscr.attron(curses.color_pair(5))
                     game_line = f"Game: {self.sanitize_for_curses(game.name)}"
-                    self.stdscr.addstr(y, 1, game_line[:self.width-2])
+                    self.safe_addstr(y, 1, game_line[:self.width-2])
                     y += 1
                     if game.description:
                         desc_safe = self.sanitize_for_curses(game.description)
                         desc_display = desc_safe if len(desc_safe) <= self.width - 15 else desc_safe[:self.width-18] + "..."
                         desc_line = f"Description: {desc_display}"
-                        self.stdscr.addstr(y, 1, desc_line[:self.width-2])
+                        self.safe_addstr(y, 1, desc_line[:self.width-2])
                         y += 1
 
                     # Show year and manufacturer on same line if they fit
@@ -1041,7 +1053,7 @@ class CursesGUI:
                             if info_line:
                                 info_line += "  |  "
                             info_line += f"Manufacturer: {self.sanitize_for_curses(game.manufacturer)}"
-                        self.stdscr.addstr(y, 1, info_line[:self.width-2])
+                        self.safe_addstr(y, 1, info_line[:self.width-2])
                         y += 1
 
                     # Show orientation and screen type if available
@@ -1053,12 +1065,12 @@ class CursesGUI:
                             if display_line:
                                 display_line += "  |  "
                             display_line += f"Screen: {self.sanitize_for_curses(game.screen_type)}"
-                        self.stdscr.addstr(y, 1, display_line[:self.width-2])
+                        self.safe_addstr(y, 1, display_line[:self.width-2])
                         y += 1
 
                     if game.cloneof:
                         clone_line = f"Clone of: {self.sanitize_for_curses(game.cloneof)}"
-                        self.stdscr.addstr(y, 1, clone_line[:self.width-2])
+                        self.safe_addstr(y, 1, clone_line[:self.width-2])
                         y += 1
 
                     self.stdscr.attroff(curses.color_pair(5))
