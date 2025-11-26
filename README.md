@@ -28,6 +28,11 @@ A tool for managing RetroArch viewport configurations for large ROM collections.
 
 The main menu provides quick access to all major functions including system configuration, DAT browsing, batch operations, and settings.
 
+### System Configuration
+![System Configuration](screenshots/toolsystemconfiguration.png)
+
+The system configuration screen allows you to set up DAT files, ROM folders, export folders, viewport overrides, and manage config backups for each emulation system.
+
 ### DAT Browser
 ![DAT Browser](screenshots/tooldatbrowser.png)
 
