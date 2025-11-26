@@ -945,7 +945,7 @@ class CursesGUI:
 
                 self.stdscr.attron(curses.color_pair(5) | curses.A_BOLD)
                 header = f"{'Name':<{name_width}} {'Desc':<{desc_width}} {'Year':<{year_width}} {'Mfr':<{mfr_width}} {'Res':<{res_width}} {'Orient':<{orient_width}} {'Screen':<{screen_width}} {'Clone':<{clone_width}} {'ROM':<{rom_width}} {'OVR':<{ovr_width}}"
-                self.stdscr.addstr(y, 0, header[:self.width])
+                self.safe_addstr(y, 0, header[:self.width])
                 self.stdscr.attroff(curses.color_pair(5) | curses.A_BOLD)
 
                 # Calculate visible games in top section
@@ -1015,13 +1015,13 @@ class CursesGUI:
 
                 # Draw separator line
                 self.stdscr.attron(curses.color_pair(5))
-                self.stdscr.addstr(split_y, 0, "=" * self.width)
+                self.safe_addstr(split_y, 0, "=" * self.width)
                 self.stdscr.attroff(curses.color_pair(5))
 
                 # === BOTTOM SECTION: Config Preview ===
                 y = split_y + 1
                 self.stdscr.attron(curses.color_pair(5) | curses.A_BOLD)
-                self.stdscr.addstr(y, 1, "Overrides Preview:")
+                self.safe_addstr(y, 1, "Overrides Preview:")
                 self.stdscr.attroff(curses.color_pair(5) | curses.A_BOLD)
 
                 y += 1
@@ -1079,13 +1079,13 @@ class CursesGUI:
 
                     # Show original vs final resolution
                     res_line = f"Original Resolution: {game.width}x{game.height}"
-                    self.stdscr.addstr(y, 1, res_line[:self.width-2])
+                    self.safe_addstr(y, 1, res_line[:self.width-2])
                     y += 1
 
                     if system.override_width or system.override_height:
                         self.stdscr.attron(curses.color_pair(4))
                         override_line = f"Override Applied: {final_width}x{final_height}"
-                        self.stdscr.addstr(y, 1, override_line[:self.width-2])
+                        self.safe_addstr(y, 1, override_line[:self.width-2])
                         self.stdscr.attroff(curses.color_pair(4))
                         y += 1
 
@@ -1093,7 +1093,7 @@ class CursesGUI:
 
                     # Show config file name outside the box
                     cfg_line = f"Overrides will be written to {game.name}.zip.cfg as:"
-                    self.stdscr.addstr(y, 1, cfg_line[:self.width-2])
+                    self.safe_addstr(y, 1, cfg_line[:self.width-2])
                     y += 1
 
                     # Draw rectangle for config file preview
@@ -1102,13 +1102,13 @@ class CursesGUI:
 
                     # Draw top border with dark gray background
                     self.stdscr.attron(curses.color_pair(6) | curses.A_DIM)
-                    self.stdscr.addstr(y, box_x, "┌" + "─" * (box_width - 2) + "┐")
+                    self.safe_addstr(y, box_x, "┌" + "─" * (box_width - 2) + "┐")
                     y += 1
 
                     # Config file entries inside box with dark gray background
                     # Show aspect_ratio_index first
                     aspect_line = f"aspect_ratio_index = \"23\""
-                    self.stdscr.addstr(y, box_x, "│ " + aspect_line[:box_width-4].ljust(box_width-3) + "│")
+                    self.safe_addstr(y, box_x, "│ " + aspect_line[:box_width-4].ljust(box_width-3) + "│")
                     y += 1
 
                     # Show X and Y position (always show them, use override if set or 0 if not)
@@ -1116,23 +1116,23 @@ class CursesGUI:
                     final_y = system.override_y if system.override_y is not None else 0
 
                     x_line = f"custom_viewport_x = \"{final_x}\""
-                    self.stdscr.addstr(y, box_x, "│ " + x_line[:box_width-4].ljust(box_width-3) + "│")
+                    self.safe_addstr(y, box_x, "│ " + x_line[:box_width-4].ljust(box_width-3) + "│")
                     y += 1
 
                     y_line = f"custom_viewport_y = \"{final_y}\""
-                    self.stdscr.addstr(y, box_x, "│ " + y_line[:box_width-4].ljust(box_width-3) + "│")
+                    self.safe_addstr(y, box_x, "│ " + y_line[:box_width-4].ljust(box_width-3) + "│")
                     y += 1
 
                     width_line = f"custom_viewport_width = \"{final_width}\""
-                    self.stdscr.addstr(y, box_x, "│ " + width_line[:box_width-4].ljust(box_width-3) + "│")
+                    self.safe_addstr(y, box_x, "│ " + width_line[:box_width-4].ljust(box_width-3) + "│")
                     y += 1
 
                     height_line = f"custom_viewport_height = \"{final_height}\""
-                    self.stdscr.addstr(y, box_x, "│ " + height_line[:box_width-4].ljust(box_width-3) + "│")
+                    self.safe_addstr(y, box_x, "│ " + height_line[:box_width-4].ljust(box_width-3) + "│")
                     y += 1
 
                     # Draw bottom border
-                    self.stdscr.addstr(y, box_x, "└" + "─" * (box_width - 2) + "┘")
+                    self.safe_addstr(y, box_x, "└" + "─" * (box_width - 2) + "┘")
                     self.stdscr.attroff(curses.color_pair(6) | curses.A_DIM)
 
                 self.draw_footer("Up/Down: Navigate | Enter: Write Config | d: Delete Override | /: Filter | c: Clear | q: Back")
@@ -1293,7 +1293,7 @@ class CursesGUI:
             if description:  # Only show if there's a description
                 desc_y = self.height - 3
                 self.stdscr.attron(curses.color_pair(5))
-                self.stdscr.addstr(desc_y, 2, description[:self.width-4])
+                self.safe_addstr(desc_y, 2, description[:self.width-4])
                 self.stdscr.attroff(curses.color_pair(5))
 
             self.draw_footer("Up/Down: Navigate | Enter: Select | Esc/q: Back")
