@@ -1,6 +1,11 @@
 # Viewport Configuration Tool
 
-A comprehensive tool for managing RetroArch viewport viewport configurations for ROM configuration files. Supports multiple emulation systems including FinalBurn Neo and MAME.
+A tool for managing RetroArch viewport configurations for large ROM collections.   
+
+* Fetches accurate per-game resolution information from DAT files, and applies user overrides easily for both single games and large collections.  
+* Especially useful for arcade setups that use [CRTSwitchRes](https://docs.libretro.com/guides/crtswitchres/#option-2-crt-super-resolution), to fine tune super resolution configurations and precisely control how the game is rendered on the CRT screen.
+* Easily set viewport x and y position, width and height.
+* Supports multiple emulation systems including FinalBurn Neo and MAME.
 
 ## Features
 
@@ -177,17 +182,7 @@ These settings configure RetroArch to use custom viewport dimensions and positio
 - **Remove Overrides**: Remove overrides from current system or all systems
 - **Configuration Persistence**: Save/load system configurations with auto-save option
 
-### Navigation
-- **Numeric Keys**: Press [1], [2], etc. to quickly select menu options
-- **Arrow Keys**: Traditional navigation support
-- **Contextual Help**: Each menu option shows a description at the bottom of the screen
-- **ESC/Q**: Quick exit from submenus
-- **Consistent UI**: Uniform [number] formatting across all menus
-
 ## License
 
-[Add your license here]
+[MIT License](https://mit-license.org/)
 
-## Contributing
-
-[Add contribution guidelines here]
