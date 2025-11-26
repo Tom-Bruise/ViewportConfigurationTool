@@ -21,6 +21,18 @@ A tool for managing RetroArch viewport configurations for large ROM collections.
 - **Export Folders**: Optional separate config output location
 - **Interactive DAT Browser**: Browse games with full metadata and config preview
 
+## Screenshots
+
+### Main Menu
+![Main Menu](screenshots/toolmainmenu.png)
+
+The main menu provides quick access to all major functions including system configuration, DAT browsing, batch operations, and settings.
+
+### DAT Browser
+![DAT Browser](screenshots/tooldatbrowser.png)
+
+The DAT browser displays game metadata with ROM status (ROM column) and override status (OVR column), along with a live preview of the viewport configuration that will be applied.
+
 ## Usage
 
 ### GUI Mode (Default)
