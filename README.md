@@ -168,6 +168,8 @@ viewportConfigurationTool/
 ├── README.md                 # This file
 └── .gitignore               # Git ignore patterns
 
+```
+
 ## License
 
 [MIT License](https://mit-license.org/)
