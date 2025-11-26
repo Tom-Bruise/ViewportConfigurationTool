@@ -1,8 +1,8 @@
 """
-Terminal user interface (TUI) for the resolution override tool.
+Terminal user interface (TUI) for the viewport configuration tool.
 
 This module provides a curses-based interactive GUI for managing
-ROM resolution overrides across multiple emulation systems.
+ROM viewport configurations across multiple emulation systems.
 """
 
 import curses
@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from .core import GameInfo, ResolutionOverrideManager
+from .core import GameInfo, ViewportConfigurationManager
 from .network import get_dat_sources, download_dat_file
 
 class SystemConfig:
@@ -31,7 +31,7 @@ class SystemConfig:
         self.override_x = override_x
         self.override_y = override_y
         self.export_folder = export_folder
-        self.manager: Optional[ResolutionOverrideManager] = None
+        self.manager: Optional[ViewportConfigurationManager] = None
 
     def to_dict(self) -> dict:
         """Convert system config to dictionary for JSON serialization."""
@@ -172,21 +172,27 @@ class CursesGUI:
         except curses.error:
             pass
 
-    def draw_menu(self, title: str, items: List[str], selected: int, start_y: int = 2) -> None:
-        """Draw a menu with selectable items."""
+    def draw_menu(self, title: str, items: List, selected: int, start_y: int = 2) -> None:
+        """Draw a menu with selectable items.
+
+        Items can be either strings or tuples of (item_text, description).
+        """
         for idx, item in enumerate(items):
             y = start_y + idx
             if y >= self.height - 2:
                 break
 
+            # Handle both string items and tuple items (text, description)
+            item_text = item[0] if isinstance(item, tuple) else item
+
             if idx == selected:
                 self.stdscr.attron(curses.color_pair(1) | curses.A_BOLD)
-                self.stdscr.addstr(y, 2, f"> {item}".ljust(self.width - 4)[:self.width - 4])
+                self.stdscr.addstr(y, 2, f"> {item_text}".ljust(self.width - 4)[:self.width - 4])
                 self.stdscr.attroff(curses.color_pair(1) | curses.A_BOLD)
             else:
-                self.stdscr.addstr(y, 2, f"  {item}"[:self.width - 4])
+                self.stdscr.addstr(y, 2, f"  {item_text}"[:self.width - 4])
 
-    def get_menu_selection_from_key(self, key: int, menu_items: List[str]) -> Optional[int]:
+    def get_menu_selection_from_key(self, key: int, menu_items: List) -> Optional[int]:
         """
         Get menu selection index from a key press.
 
@@ -197,7 +203,7 @@ class CursesGUI:
 
         Args:
             key: The key code pressed
-            menu_items: List of menu item strings
+            menu_items: List of menu item strings or tuples (item_text, description)
 
         Returns:
             Index of the matching menu item, or None if no match
@@ -207,11 +213,14 @@ class CursesGUI:
             return None
 
         for idx, item in enumerate(menu_items):
+            # Handle both string items and tuple items (text, description)
+            item_text = item[0] if isinstance(item, tuple) else item
+
             # Extract prefix from [X] format
-            if item.strip().startswith('[') and ']' in item:
-                start = item.index('[') + 1
-                end = item.index(']')
-                prefix = item[start:end].strip()
+            if item_text.strip().startswith('[') and ']' in item_text:
+                start = item_text.index('[') + 1
+                end = item_text.index(']')
+                prefix = item_text[start:end].strip()
                 if prefix == key_char:
                     return idx
 
@@ -467,6 +476,21 @@ class CursesGUI:
         start_y = max(1, (self.height - window_height) // 2)
         start_x = max(1, (self.width - window_width) // 2)
 
+        # Draw shadow effect (bottom and right edges)
+        shadow_offset = 1
+        # Right shadow
+        for y in range(start_y + 1, min(start_y + window_height + 2, self.height - 1)):
+            if start_x + window_width + shadow_offset < self.width:
+                self.stdscr.attron(curses.A_DIM)
+                self.stdscr.addstr(y, start_x + window_width, "░")
+                self.stdscr.attroff(curses.A_DIM)
+        # Bottom shadow
+        if start_y + window_height + 2 < self.height - 1:
+            for x in range(start_x + shadow_offset, min(start_x + window_width + shadow_offset, self.width)):
+                self.stdscr.attron(curses.A_DIM)
+                self.stdscr.addstr(start_y + window_height + 2, x, "░")
+                self.stdscr.attroff(curses.A_DIM)
+
         # Draw background with blue color for entire window area
         self.stdscr.attron(curses.color_pair(9))
         for y in range(start_y, min(start_y + window_height + 2, self.height - 1)):
@@ -547,10 +571,10 @@ class CursesGUI:
         menu_items = [
             ("1", "Manage Systems", "Add, edit, or remove system configurations"),
             ("2", "Select Active System", "Choose which system to work with"),
-            ("3", "Configure Current System", "Set DAT file, ROM folder, and resolution overrides"),
+            ("3", "Configure Current System", "Set DAT file, ROM folder, and viewport configuration"),
             ("4", "Browse DAT File", "Explore games in the DAT file with detailed metadata"),
-            ("5", "Process Current System", "Apply resolution overrides to current system ROMs"),
-            ("6", "Process All Systems", "Apply resolution overrides to all configured systems"),
+            ("5", "Process Current System", "Apply viewport configurations to current system ROMs"),
+            ("6", "Process All Systems", "Apply viewport configurations to all configured systems"),
             ("7", "Remove Current System Overrides", "Remove viewport overrides from current system config files"),
             ("8", "Remove All Systems Overrides", "Remove viewport overrides from all systems config files"),
             ("s", "Save Configuration", "Save all system configurations to disk"),
@@ -562,7 +586,7 @@ class CursesGUI:
 
         while True:
             self.stdscr.clear()
-            self.draw_header("ROM Resolution Override Tool - Main Menu")
+            self.draw_header("Viewport Configuration Tool - Main Menu")
 
             # Display system overview
             y = 2
@@ -738,10 +762,18 @@ class CursesGUI:
 
             y += 2
             menu_items = [
-                f"Toggle Auto-Save (Currently: {auto_save_status})",
+                (f"Toggle Auto-Save (Currently: {auto_save_status})", "Automatically save configuration when exiting the application"),
             ]
 
             self.draw_menu("", menu_items, selected, y)
+
+            # Show description of selected option at bottom
+            _, description = menu_items[selected]
+            desc_y = self.height - 3
+            self.stdscr.attron(curses.color_pair(5))
+            self.stdscr.addstr(desc_y, 2, description[:self.width-4])
+            self.stdscr.attroff(curses.color_pair(5))
+
             self.draw_footer("Up/Down: Navigate | Enter: Select | Esc/q: Back")
             self.stdscr.refresh()
 
@@ -813,7 +845,7 @@ class CursesGUI:
 
         try:
             # Create temporary manager to parse DAT
-            temp_manager = ResolutionOverrideManager(
+            temp_manager = ViewportConfigurationManager(
                 system.dat_file,
                 None,
                 system.override_width,
@@ -902,14 +934,26 @@ class CursesGUI:
                         rom_path = Path(system.rom_folder) / f"{game.name}.zip"
                         rom_status = "Y" if rom_path.exists() else "N"
 
-                    # Check if override config exists
+                    # Check if viewport override exists in config
                     override_status = "N"
+                    config_path = None
+
+                    # Determine config file location
                     if system.export_folder:
                         config_path = Path(system.export_folder) / f"{game.name}.zip.cfg"
-                        override_status = "Y" if config_path.exists() else "N"
                     elif system.rom_folder:
                         config_path = Path(system.rom_folder) / f"{game.name}.zip.cfg"
-                        override_status = "Y" if config_path.exists() else "N"
+
+                    # Check if config exists and contains viewport overrides
+                    if config_path is not None and config_path.exists():
+                        try:
+                            with open(config_path, 'r') as f:
+                                content = f.read()
+                                if 'custom_viewport_width' in content or 'custom_viewport_height' in content:
+                                    override_status = "Y"
+                        except Exception:
+                            # If we can't read the file, assume no override
+                            pass
 
                     # Truncate fields to fit calculated widths
                     name = game.name[:name_width-1]
@@ -1087,7 +1131,7 @@ class CursesGUI:
                         if self.show_confirm("Confirm Remove Override", confirm_msg, 4):
                             try:
                                 # Create a temporary manager to remove the config
-                                remove_manager = ResolutionOverrideManager(
+                                remove_manager = ViewportConfigurationManager(
                                     system.dat_file,
                                     system.rom_folder if system.rom_folder else None,
                                     system.override_width,
@@ -1109,6 +1153,8 @@ class CursesGUI:
                                             self.show_message("Success", f"Removed viewport override for {game.name}\n(Empty config file kept)", 2)
                                     else:
                                         self.show_message("Success", f"Removed viewport override for {game.name}", 2)
+                                    # Force screen refresh to update OVR column
+                                    continue
                                 else:
                                     self.show_message("Info", f"No viewport override found for {game.name}", 5)
                             except Exception as e:
@@ -1137,7 +1183,7 @@ class CursesGUI:
                         if self.show_confirm("Confirm Write Config", confirm_msg, 5):
                             try:
                                 # Create a temporary manager to write the config
-                                write_manager = ResolutionOverrideManager(
+                                write_manager = ViewportConfigurationManager(
                                     system.dat_file,
                                     system.rom_folder if system.rom_folder else None,
                                     system.override_width,
@@ -1190,14 +1236,27 @@ class CursesGUI:
             menu_items = []
             for system in self.systems:
                 status = "OK" if system.dat_file and system.rom_folder else "!"
-                menu_items.append(f"[{status}] {system.name}")
+                menu_items.append((f"[{status}] {system.name}", f"Configure {system.name} settings"))
 
-            menu_items.extend(["", "Add New System", "Remove Selected System", "Back"])
+            menu_items.extend([
+                ("", ""),
+                ("Add New System", "Add a new emulation system configuration"),
+                ("Remove Selected System", "Remove the currently selected system"),
+                ("Back", "Return to main menu")
+            ])
 
             self.stdscr.clear()
             self.draw_header("Manage Systems")
 
             self.draw_menu("", menu_items, selected, 2)
+
+            # Show description of selected option at bottom
+            _, description = menu_items[selected]
+            if description:  # Only show if there's a description
+                desc_y = self.height - 3
+                self.stdscr.attron(curses.color_pair(5))
+                self.stdscr.addstr(desc_y, 2, description[:self.width-4])
+                self.stdscr.attroff(curses.color_pair(5))
 
             self.draw_footer("Up/Down: Navigate | Enter: Select | Esc/q: Back")
             self.stdscr.refresh()
@@ -1209,19 +1268,21 @@ class CursesGUI:
             elif key == curses.KEY_DOWN and selected < len(menu_items) - 1:
                 selected += 1
             elif key == ord('\n'):
+                item_text = menu_items[selected][0] if isinstance(menu_items[selected], tuple) else menu_items[selected]
+
                 if selected < len(self.systems):
                     # Edit existing system
                     self.current_system_idx = selected
                     self.configure_current_system()
-                elif menu_items[selected] == "Add New System":
+                elif item_text == "Add New System":
                     self.add_new_system()
-                elif menu_items[selected] == "Remove Selected System":
+                elif item_text == "Remove Selected System":
                     if self.systems and self.current_system_idx < len(self.systems):
                         removed = self.systems.pop(self.current_system_idx)
                         self.show_message("Success", f"Removed system: {removed.name}", 2)
                         if self.current_system_idx >= len(self.systems) and self.systems:
                             self.current_system_idx = len(self.systems) - 1
-                elif menu_items[selected] == "Back":
+                elif item_text == "Back":
                     break
             elif key == 27 or key == ord('q'):
                 break
@@ -1275,12 +1336,14 @@ class CursesGUI:
 
         selected = 0
         menu_items = [
-            "[1] Set DAT File Path",
-            "[2] Download and set DAT File from Web",
-            "[3] Set ROM Folder Path",
-            "[4] Set Export Folder Path",
-            "[5] Set Resolution Override",
-            "[6] Back"
+            ("[1] Set DAT File Path", "Browse or manually enter DAT file path"),
+            ("[2] Download and set DAT File from Web", "Download DAT file from libretro repositories"),
+            ("[3] Set ROM Folder Path", "Browse or manually enter ROM folder path"),
+            ("[4] Set Export Folder Path", "Set optional export folder for config files"),
+            ("[5] Set Viewport Configuration", "Configure viewport width, height, and position overrides"),
+            ("[6] Backup Config Files", "Create a zip backup of all config files"),
+            ("[7] Restore Config Files", "Restore config files from a zip backup"),
+            ("[8] Back", "Return to main menu")
         ]
 
         while True:
@@ -1312,6 +1375,13 @@ class CursesGUI:
             y += 2
             self.draw_menu("", menu_items, selected, y)
 
+            # Show description of selected option at bottom
+            _, description = menu_items[selected]
+            desc_y = self.height - 3
+            self.stdscr.attron(curses.color_pair(5))
+            self.stdscr.addstr(desc_y, 2, description[:self.width-4])
+            self.stdscr.attroff(curses.color_pair(5))
+
             self.draw_footer("Up/Down: Navigate | Enter: Select | Esc/q: Back")
             self.stdscr.refresh()
 
@@ -1340,6 +1410,10 @@ class CursesGUI:
                 elif selected == 4:
                     self.set_system_resolution_override(system)
                 elif selected == 5:
+                    self.backup_system_configs(system)
+                elif selected == 6:
+                    self.restore_system_configs(system)
+                elif selected == 7:
                     break
             elif key == 27 or key == ord('q'):
                 break
@@ -1349,7 +1423,11 @@ class CursesGUI:
         """Set the DAT file path for a system."""
         # Show selection menu: Browse or Manual Entry
         selected = 0
-        menu_items = ["[1] Browse for File", "[2] Manual Entry", "[3] Cancel"]
+        menu_items = [
+            ("[1] Browse for File", "Use file browser to select DAT file"),
+            ("[2] Manual Entry", "Manually enter the DAT file path"),
+            ("[3] Cancel", "Cancel and return to previous menu")
+        ]
 
         while True:
             self.stdscr.clear()
@@ -1363,6 +1441,14 @@ class CursesGUI:
                 y += 2
 
             self.draw_menu("", menu_items, selected, y)
+
+            # Show description of selected option at bottom
+            _, description = menu_items[selected]
+            desc_y = self.height - 3
+            self.stdscr.attron(curses.color_pair(5))
+            self.stdscr.addstr(desc_y, 2, description[:self.width-4])
+            self.stdscr.attroff(curses.color_pair(5))
+
             self.draw_footer("Up/Down: Navigate | Enter: Select | Esc/q: Cancel")
             self.stdscr.refresh()
 
@@ -1502,7 +1588,11 @@ class CursesGUI:
         """Set the ROM folder path for a system."""
         # Show selection menu: Browse or Manual Entry
         selected = 0
-        menu_items = ["[1] Browse for Folder", "[2] Manual Entry", "[3] Cancel"]
+        menu_items = [
+            ("[1] Browse for Folder", "Use file browser to select ROM folder"),
+            ("[2] Manual Entry", "Manually enter the ROM folder path"),
+            ("[3] Cancel", "Cancel and return to previous menu")
+        ]
 
         while True:
             self.stdscr.clear()
@@ -1516,6 +1606,14 @@ class CursesGUI:
                 y += 2
 
             self.draw_menu("", menu_items, selected, y)
+
+            # Show description of selected option at bottom
+            _, description = menu_items[selected]
+            desc_y = self.height - 3
+            self.stdscr.attron(curses.color_pair(5))
+            self.stdscr.addstr(desc_y, 2, description[:self.width-4])
+            self.stdscr.attroff(curses.color_pair(5))
+
             self.draw_footer("Up/Down: Navigate | Enter: Select | Esc/q: Cancel")
             self.stdscr.refresh()
 
@@ -1563,7 +1661,12 @@ class CursesGUI:
         """Set the export folder path for a system."""
         # Show selection menu: Browse, Manual Entry, or Clear
         selected = 0
-        menu_items = ["[1] Browse for Folder", "[2] Manual Entry", "[3] Clear Export Folder", "[4] Cancel"]
+        menu_items = [
+            ("[1] Browse for Folder", "Use file browser to select export folder"),
+            ("[2] Manual Entry", "Manually enter the export folder path"),
+            ("[3] Clear Export Folder", "Clear export folder setting (will use ROM folder)"),
+            ("[4] Cancel", "Cancel and return to previous menu")
+        ]
 
         while True:
             self.stdscr.clear()
@@ -1581,6 +1684,14 @@ class CursesGUI:
             y += 2
 
             self.draw_menu("", menu_items, selected, y)
+
+            # Show description of selected option at bottom
+            _, description = menu_items[selected]
+            desc_y = self.height - 3
+            self.stdscr.attron(curses.color_pair(5))
+            self.stdscr.addstr(desc_y, 2, description[:self.width-4])
+            self.stdscr.attroff(curses.color_pair(5))
+
             self.draw_footer("Up/Down: Navigate | Enter: Select | Esc/q: Cancel")
             self.stdscr.refresh()
 
@@ -1627,7 +1738,7 @@ class CursesGUI:
                 break
 
     def set_system_resolution_override(self, system: SystemConfig) -> None:
-        """Set resolution override for a system."""
+        """Set viewport configuration for a system."""
         width = self.get_input("Enter override width (or leave empty for none):",
                               str(system.override_width) if system.override_width else "")
         if width:
@@ -1680,7 +1791,7 @@ class CursesGUI:
 
         # Build success message with position and size
         if system.override_width and system.override_height:
-            msg_lines = ["Resolution override set to:"]
+            msg_lines = ["Viewport configuration set to:"]
 
             x_val = system.override_x if system.override_x is not None else 0
             y_val = system.override_y if system.override_y is not None else 0
@@ -1694,7 +1805,108 @@ class CursesGUI:
             self.show_message("Success",
                             f"Viewport position set to:\n({x_val}, {y_val})\n\nNote: Width and height not set", 2)
         else:
-            self.show_message("Success", "Resolution override cleared", 2)
+            self.show_message("Success", "Viewport configuration cleared", 2)
+
+    def backup_system_configs(self, system: SystemConfig) -> None:
+        """Backup all config files for a system to a zip file."""
+        if not self.initialize_system_manager(system, require_rom_folder=True):
+            return
+
+        # Get config folder (export folder or rom folder)
+        config_folder = system.manager.export_folder if system.manager.export_folder else system.manager.rom_folder
+
+        if not config_folder or not config_folder.exists():
+            self.show_message("Error", f"Config folder not found:\n{config_folder}", 3)
+            return
+
+        # Check if there are any config files
+        config_files = list(config_folder.glob('*.cfg'))
+        if not config_files:
+            self.show_message("Error", "No config files found to backup", 3)
+            return
+
+        # Ask user for backup location
+        result = self.file_browser(
+            "Select location to save backup",
+            start_path=str(config_folder),
+            select_dirs=True,
+            file_pattern=None
+        )
+
+        if not result:
+            return
+
+        # Generate backup filename
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_name = f"config_backup_{timestamp}.zip"
+        backup_path = Path(result) / backup_name
+
+        # Show progress message
+        self.show_message("Backup", f"Creating backup...\n{len(config_files)} config files", 1)
+
+        # Create backup
+        success, final_path, error = system.manager.backup_configs(backup_path)
+
+        if success:
+            self.show_message("Success",
+                            f"Backup created successfully!\n\n"
+                            f"Location: {final_path}\n"
+                            f"Files backed up: {len(config_files)}",
+                            3)
+        else:
+            self.show_message("Error", f"Backup failed:\n{error}", 3)
+
+    def restore_system_configs(self, system: SystemConfig) -> None:
+        """Restore config files from a zip backup."""
+        if not self.initialize_system_manager(system, require_rom_folder=True):
+            return
+
+        # Get config folder (export folder or rom folder)
+        config_folder = system.manager.export_folder if system.manager.export_folder else system.manager.rom_folder
+
+        if not config_folder or not config_folder.exists():
+            self.show_message("Error", f"Config folder not found:\n{config_folder}", 3)
+            return
+
+        # Ask user to select backup file
+        result = self.file_browser(
+            "Select backup file to restore",
+            start_path=str(config_folder),
+            select_dirs=False,
+            file_pattern="*.zip"
+        )
+
+        if not result:
+            return
+
+        backup_path = Path(result)
+
+        # Ask user about overwrite behavior
+        overwrite = self.show_confirm(
+            "Restore Config Files",
+            f"Restore configs from:\n{backup_path.name}\n\n"
+            f"Overwrite existing config files?",
+            3
+        )
+
+        if overwrite is None:  # User cancelled
+            return
+
+        # Show progress message
+        self.show_message("Restore", "Restoring config files...", 1)
+
+        # Restore backup
+        restored, skipped, error = system.manager.restore_configs(backup_path, overwrite=overwrite)
+
+        if error:
+            self.show_message("Error", f"Restore failed:\n{error}", 3)
+        else:
+            msg_lines = ["Restore complete!"]
+            msg_lines.append(f"Restored: {restored}")
+            if skipped > 0:
+                msg_lines.append(f"Skipped: {skipped}")
+            self.show_message("Success", "\n".join(msg_lines), 3)
 
     def initialize_system_manager(self, system: SystemConfig, require_rom_folder: bool = True) -> bool:
         """Initialize or reinitialize the manager for a system.
@@ -1714,7 +1926,7 @@ class CursesGUI:
 
         try:
             if not system.manager:
-                system.manager = ResolutionOverrideManager(
+                system.manager = ViewportConfigurationManager(
                     system.dat_file,
                     system.rom_folder if system.rom_folder else None,
                     system.override_width,
@@ -1945,7 +2157,7 @@ class CursesGUI:
                     if self.show_confirm("Confirm Write Config", confirm_msg, 5):
                         try:
                             # Create a temporary manager to write the config
-                            write_manager = ResolutionOverrideManager(
+                            write_manager = ViewportConfigurationManager(
                                 system.dat_file,
                                 system.rom_folder if system.rom_folder else None,
                                 system.override_width,

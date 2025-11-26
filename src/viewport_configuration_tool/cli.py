@@ -1,18 +1,18 @@
 """
-Command-line interface for the resolution override tool.
+Command-line interface for the viewport configuration tool.
 
 This module handles CLI argument parsing and batch processing.
 """
 
 import argparse
 import os
-from .core import ResolutionOverrideManager
+from .core import ViewportConfigurationManager
 
 
 def main_cli():
     """Main entry point for CLI mode."""
     parser = argparse.ArgumentParser(
-        description='ROM Resolution Override Settings - Process multiple emulation systems',
+        description='ROM Viewport Configuration Settings - Process multiple emulation systems',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Examples:
@@ -152,7 +152,7 @@ Examples:
         print("=" * 70)
 
         try:
-            manager = ResolutionOverrideManager(
+            manager = ViewportConfigurationManager(
                 dat_file, rom_folder, override_w, override_h, override_x, override_y, export_folder
             )
             manager.parse_dat_file()
@@ -197,7 +197,7 @@ Examples:
         print("=" * 70)
 
         try:
-            manager = ResolutionOverrideManager(
+            manager = ViewportConfigurationManager(
                 dat_file, rom_folder, override_w, override_h, override_x, override_y, export_folder
             )
             manager.parse_dat_file()
@@ -249,7 +249,7 @@ Examples:
             export_folder = exports.get(name, None)
 
             try:
-                manager = ResolutionOverrideManager(
+                manager = ViewportConfigurationManager(
                     dat_file, rom_folder, override_w, override_h, override_x, override_y, export_folder
                 )
                 manager.parse_dat_file()

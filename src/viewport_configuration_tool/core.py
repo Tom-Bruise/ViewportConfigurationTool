@@ -1,11 +1,13 @@
 """
-Core library for resolution override management.
+Core library for viewport configuration management.
 
 This module contains the core functionality for parsing DAT files,
-managing ROM configurations, and applying viewport overrides.
+managing ROM configurations, and applying viewport configurations.
 """
 
 import xml.etree.ElementTree as ET
+import zipfile
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Callable, NamedTuple
 
@@ -23,7 +25,7 @@ class GameInfo(NamedTuple):
     screen_type: str = ""  # Video type (raster, vector, lcd, etc)
 
 
-class ResolutionOverrideManager:
+class ViewportConfigurationManager:
     def __init__(self, dat_file: str = None, rom_folder: str = None,
                  override_width: Optional[int] = None,
                  override_height: Optional[int] = None,
@@ -32,7 +34,7 @@ class ResolutionOverrideManager:
                  export_folder: str = None,
                  log_callback: Optional[Callable[[str], None]] = None):
         """
-        Initialize the Resolution Override Manager.
+        Initialize the Viewport Configuration Manager.
 
         Args:
             dat_file: Path to the FinalBurn Neo DAT file
@@ -289,7 +291,8 @@ class ResolutionOverrideManager:
             config_path.unlink()
             self.log(f"Removed config file for {rom_name}.zip (was empty after removing overrides)")
         elif is_empty:
-            # Don't delete, just log
+            # Config is empty but we're not deleting - write empty config
+            self.write_config_file(config_path, config)
             self.log(f"Config for {rom_name}.zip is now empty after removing overrides")
         else:
             # Write updated config
@@ -429,3 +432,114 @@ class ResolutionOverrideManager:
         self.log(f"  Skipped: {skipped_count}")
 
         return processed_count, skipped_count
+
+    def backup_configs(self, backup_path: Optional[Path] = None) -> Tuple[bool, Optional[Path], Optional[str]]:
+        """
+        Create a zip backup of all config files in the ROM folder.
+
+        Args:
+            backup_path: Optional path for the backup file. If None, generates a timestamped filename.
+
+        Returns:
+            Tuple of (success: bool, backup_path: Optional[Path], error_message: Optional[str])
+        """
+        # Use export folder if set, otherwise use ROM folder
+        config_folder = self.export_folder if self.export_folder else self.rom_folder
+
+        if not config_folder or not config_folder.exists():
+            error_msg = f"Config folder not found: {config_folder}"
+            self.log(error_msg)
+            return False, None, error_msg
+
+        # Get all .cfg files
+        config_files = list(config_folder.glob('*.cfg'))
+
+        if not config_files:
+            error_msg = "No config files found to backup"
+            self.log(error_msg)
+            return False, None, error_msg
+
+        # Generate backup filename if not provided
+        if backup_path is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = config_folder / f"config_backup_{timestamp}.zip"
+
+        try:
+            with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for config_file in config_files:
+                    # Add file to zip with just the filename (no path)
+                    zipf.write(config_file, config_file.name)
+
+            self.log(f"Backup created: {backup_path}")
+            self.log(f"Backed up {len(config_files)} config files")
+            return True, backup_path, None
+
+        except Exception as e:
+            error_msg = f"Backup failed: {str(e)}"
+            self.log(error_msg)
+            return False, None, error_msg
+
+    def restore_configs(self, backup_path: Path, overwrite: bool = True) -> Tuple[int, int, Optional[str]]:
+        """
+        Restore config files from a zip backup.
+
+        Args:
+            backup_path: Path to the backup zip file
+            overwrite: If True, overwrite existing config files. If False, skip existing files.
+
+        Returns:
+            Tuple of (restored_count: int, skipped_count: int, error_message: Optional[str])
+        """
+        # Use export folder if set, otherwise use ROM folder
+        config_folder = self.export_folder if self.export_folder else self.rom_folder
+
+        if not config_folder or not config_folder.exists():
+            error_msg = f"Config folder not found: {config_folder}"
+            self.log(error_msg)
+            return 0, 0, error_msg
+
+        if not backup_path.exists():
+            error_msg = f"Backup file not found: {backup_path}"
+            self.log(error_msg)
+            return 0, 0, error_msg
+
+        try:
+            restored_count = 0
+            skipped_count = 0
+
+            with zipfile.ZipFile(backup_path, 'r') as zipf:
+                # Get list of .cfg files in the zip
+                cfg_files = [f for f in zipf.namelist() if f.endswith('.cfg')]
+
+                if not cfg_files:
+                    error_msg = "No config files found in backup"
+                    self.log(error_msg)
+                    return 0, 0, error_msg
+
+                for filename in cfg_files:
+                    target_path = config_folder / filename
+
+                    if target_path.exists() and not overwrite:
+                        self.log(f"Skipped {filename} (already exists)")
+                        skipped_count += 1
+                        continue
+
+                    # Extract the file
+                    zipf.extract(filename, config_folder)
+                    self.log(f"Restored {filename}")
+                    restored_count += 1
+
+            self.log(f"\nRestore complete:")
+            self.log(f"  Restored: {restored_count}")
+            self.log(f"  Skipped: {skipped_count}")
+
+            return restored_count, skipped_count, None
+
+        except zipfile.BadZipFile:
+            error_msg = "Invalid backup file (not a valid zip archive)"
+            self.log(error_msg)
+            return 0, 0, error_msg
+        except Exception as e:
+            error_msg = f"Restore failed: {str(e)}"
+            self.log(error_msg)
+            return 0, 0, error_msg

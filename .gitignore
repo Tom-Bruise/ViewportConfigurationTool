@@ -30,4 +30,4 @@ ENV/
 Thumbs.db
 
 # Config files (user-specific)
-.resolution_override_config.json
+.viewport_configuration_config.json

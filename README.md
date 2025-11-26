@@ -1,10 +1,10 @@
-# Resolution Override Tool
+# Viewport Configuration Tool
 
-A comprehensive tool for managing RetroArch viewport resolution overrides for ROM configuration files. Supports multiple emulation systems including FinalBurn Neo and MAME.
+A comprehensive tool for managing RetroArch viewport viewport configurations for ROM configuration files. Supports multiple emulation systems including FinalBurn Neo and MAME.
 
 ## Features
 
-- **Interactive TUI (Text User Interface)**: Curses-based terminal GUI with numeric key navigation
+- **Interactive TUI (Text User Interface)**: Curses-based terminal GUI with numeric key navigation and contextual help
 - **CLI Mode**: Batch processing support for automation
 - **Multi-System Support**: FinalBurn Neo, MAME, and custom systems
 - **DAT File Parsing**: Extracts resolution data from XML DAT files
@@ -12,6 +12,7 @@ A comprehensive tool for managing RetroArch viewport resolution overrides for RO
 - **Full Viewport Control**: Configure width, height, and position (X/Y coordinates)
 - **Bulk Operations**: Process all ROMs or individual games
 - **Override Management**: Add or remove viewport settings
+- **Config Backup/Restore**: Create and restore zip backups of config files
 - **Export Folders**: Optional separate config output location
 - **Interactive DAT Browser**: Browse games with full metadata and config preview
 
@@ -22,10 +23,10 @@ A comprehensive tool for managing RetroArch viewport resolution overrides for RO
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd resolutionOverrideTool
+cd viewportConfigurationTool
 
 # Run directly (no installation needed)
-python3 -m src.resolution_override_tool
+python3 -m src.viewport_configuration_tool
 ```
 
 ### Building Standalone Executable
@@ -51,7 +52,7 @@ Then build the executable:
 # Run build script
 python3 build.py
 
-# Find executable in dist/resolutionOverrideTool
+# Find executable in dist/viewportConfigurationTool
 ```
 
 **Troubleshooting:** If you get "pyinstaller: command not found" after `pipx install`:
@@ -66,41 +67,42 @@ python3 build.py
 Simply run without arguments to launch the interactive interface:
 
 ```bash
-python3 -m src.resolution_override_tool
-```
+# Using the launch script (recommended)
+./launchTool.sh
 
-Or with the built executable:
+# Or directly with Python
+python3 -m src.viewport_configuration_tool
 
-```bash
-./dist/resolutionOverrideTool
+# Or with the built executable
+./dist/viewportConfigurationTool
 ```
 
 ### CLI Mode
 
-Process systems via command-line arguments:
+Process systems via command-line arguments (using launch script or direct Python):
 
 ```bash
 # Process FinalBurn Neo with size override
-python3 -m src.resolution_override_tool \
+./launchTool.sh \
   --fbneo /path/to/fbneo.dat /path/to/roms \
   --fbneo-override 1920 1080
 
 # Process FinalBurn Neo with size and position override
-python3 -m src.resolution_override_tool \
+python3 -m src.viewport_configuration_tool \
   --fbneo /path/to/fbneo.dat /path/to/roms \
   --fbneo-override 1920 1080 10 20
 
 # Process MAME
-python3 -m src.resolution_override_tool \
+python3 -m src.viewport_configuration_tool \
   --mame /path/to/mame.xml /path/to/mame_roms
 
 # Process multiple systems with different overrides
-python3 -m src.resolution_override_tool \
+python3 -m src.viewport_configuration_tool \
   --fbneo /path/to/fbneo.dat /path/to/fbneo_roms --fbneo-override 1920 1080 0 0 \
   --mame /path/to/mame.xml /path/to/mame_roms --mame-override 640 480
 
 # Custom system with position override
-python3 -m src.resolution_override_tool \
+python3 -m src.viewport_configuration_tool \
   --system "MAME 2003 Plus" /path/to/dat /path/to/roms \
   --system-override "MAME 2003 Plus" 1920 1080 10 20
 ```
@@ -112,9 +114,9 @@ python3 -m src.resolution_override_tool \
 ## Project Structure
 
 ```
-resolutionOverrideTool/
+viewportConfigurationTool/
 ├── src/
-│   └── resolution_override_tool/
+│   └── viewport_configuration_tool/
 │       ├── __init__.py       # Package initialization
 │       ├── __main__.py       # Entry point
 │       ├── core.py           # Core library (parsing, config management)
@@ -122,6 +124,7 @@ resolutionOverrideTool/
 │       ├── cli.py            # Command-line interface
 │       └── network.py        # Network utilities (DAT file downloads)
 ├── downloaded_dats/          # Downloaded DAT files (auto-created)
+├── launchTool.sh             # Convenience launch script
 ├── build.py                  # PyInstaller build script
 ├── requirements.txt          # Python dependencies
 ├── README.md                 # This file
@@ -159,6 +162,7 @@ These settings configure RetroArch to use custom viewport dimensions and positio
   - MAME 2016 (0.174)
 - **Downloaded Files**: Automatically saved to `downloaded_dats` folder
 - **Override Configuration**: Set viewport width, height, X position, and Y position
+- **Backup/Restore**: Create timestamped zip backups of all config files and restore them when needed
 
 ### DAT Browser
 - **Game Metadata**: View resolution, year, manufacturer, orientation, screen type, clone info
@@ -176,6 +180,7 @@ These settings configure RetroArch to use custom viewport dimensions and positio
 ### Navigation
 - **Numeric Keys**: Press [1], [2], etc. to quickly select menu options
 - **Arrow Keys**: Traditional navigation support
+- **Contextual Help**: Each menu option shows a description at the bottom of the screen
 - **ESC/Q**: Quick exit from submenus
 - **Consistent UI**: Uniform [number] formatting across all menus
 

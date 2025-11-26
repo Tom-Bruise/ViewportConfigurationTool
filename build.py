@@ -2,7 +2,7 @@
 """
 Build script for creating standalone executable using PyInstaller.
 
-This script packages the Resolution Override Tool into a single executable
+This script packages the Viewport Configuration Tool into a single executable
 that can be distributed and run without Python installed.
 
 Works with both pip3 and pipx installations of PyInstaller.
@@ -19,12 +19,12 @@ output_dir = project_root / "dist"
 build_dir = project_root / "build"
 
 # Determine executable name based on platform
-exe_name = "resolutionOverrideTool"
+exe_name = "viewportConfigurationTool"
 if sys.platform == "win32":
     exe_name += ".exe"
 
 print("=" * 70)
-print("Building Resolution Override Tool")
+print("Building Viewport Configuration Tool")
 print("=" * 70)
 print(f"Source: {src_dir}")
 print(f"Output: {output_dir}")
@@ -34,8 +34,8 @@ print("=" * 70)
 # PyInstaller arguments
 pyinstaller_args = [
     "pyinstaller",
-    str(src_dir / "resolution_override_tool" / "__main__.py"),
-    "--name=resolutionOverrideTool",
+    str(src_dir / "viewport_configuration_tool" / "__main__.py"),
+    "--name=viewportConfigurationTool",
     f"--distpath={output_dir}",
     f"--workpath={build_dir}",
     f"--specpath={project_root}",
@@ -45,7 +45,7 @@ pyinstaller_args = [
     # Add source directory to Python path
     f"--paths={src_dir}",
     # Collect all package data
-    "--collect-all=resolution_override_tool",
+    "--collect-all=viewport_configuration_tool",
 ]
 
 # Run PyInstaller as a subprocess (works with both pip3 and pipx)
