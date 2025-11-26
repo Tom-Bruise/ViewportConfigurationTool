@@ -21,50 +21,6 @@ A tool for managing RetroArch viewport configurations for large ROM collections.
 - **Export Folders**: Optional separate config output location
 - **Interactive DAT Browser**: Browse games with full metadata and config preview
 
-## Installation
-
-### From Source
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd viewportConfigurationTool
-
-# Run directly (no installation needed)
-python3 -m src.viewport_configuration_tool
-```
-
-### Building Standalone Executable
-
-Install PyInstaller using **either** method:
-
-```bash
-# Option 1: Using pip3
-pip3 install pyinstaller
-
-# Option 2: Using pipx (isolated installation)
-pipx install pyinstaller
-
-# After pipx install, ensure PATH is configured:
-pipx ensurepath
-# You may need to restart your terminal or run:
-source ~/.bashrc  # or ~/.zshrc depending on your shell
-```
-
-Then build the executable:
-
-```bash
-# Run build script
-python3 build.py
-
-# Find executable in dist/viewportConfigurationTool
-```
-
-**Troubleshooting:** If you get "pyinstaller: command not found" after `pipx install`:
-- Run `pipx ensurepath` and restart your terminal
-- Or add to your shell profile: `export PATH="$HOME/.local/bin:$PATH"`
-- Verify with: `which pyinstaller`
-
 ## Usage
 
 ### GUI Mode (Default)
@@ -116,26 +72,6 @@ python3 -m src.viewport_configuration_tool \
 - `WIDTH HEIGHT` - Set viewport size only
 - `WIDTH HEIGHT X Y` - Set viewport size and position
 
-## Project Structure
-
-```
-viewportConfigurationTool/
-├── src/
-│   └── viewport_configuration_tool/
-│       ├── __init__.py       # Package initialization
-│       ├── __main__.py       # Entry point
-│       ├── core.py           # Core library (parsing, config management)
-│       ├── ui.py             # Terminal user interface
-│       ├── cli.py            # Command-line interface
-│       └── network.py        # Network utilities (DAT file downloads)
-├── downloaded_dats/          # Downloaded DAT files (auto-created)
-├── launchTool.sh             # Convenience launch script
-├── build.py                  # PyInstaller build script
-├── requirements.txt          # Python dependencies
-├── README.md                 # This file
-└── .gitignore               # Git ignore patterns
-```
-
 ## Configuration Files
 
 The tool creates `.cfg` files alongside your ROM files with the following settings:
@@ -181,6 +117,56 @@ These settings configure RetroArch to use custom viewport dimensions and positio
 - **Process All Systems**: Apply overrides to all configured systems
 - **Remove Overrides**: Remove overrides from current system or all systems
 - **Configuration Persistence**: Save/load system configurations with auto-save option
+
+## Building Standalone Executable
+
+Install PyInstaller using **either** method:
+
+```bash
+# Option 1: Using pip3
+pip3 install pyinstaller
+
+# Option 2: Using pipx (isolated installation)
+pipx install pyinstaller
+
+# After pipx install, ensure PATH is configured:
+pipx ensurepath
+# You may need to restart your terminal or run:
+source ~/.bashrc  # or ~/.zshrc depending on your shell
+```
+
+Then build the executable:
+
+```bash
+# Run build script
+python3 build.py
+
+# Find executable in dist/viewportConfigurationTool
+```
+
+**Troubleshooting:** If you get "pyinstaller: command not found" after `pipx install`:
+- Run `pipx ensurepath` and restart your terminal
+- Or add to your shell profile: `export PATH="$HOME/.local/bin:$PATH"`
+- Verify with: `which pyinstaller`
+
+## Project Structure
+
+```
+viewportConfigurationTool/
+├── src/
+│   └── viewport_configuration_tool/
+│       ├── __init__.py       # Package initialization
+│       ├── __main__.py       # Entry point
+│       ├── core.py           # Core library (parsing, config management)
+│       ├── ui.py             # Terminal user interface
+│       ├── cli.py            # Command-line interface
+│       └── network.py        # Network utilities (DAT file downloads)
+├── downloaded_dats/          # Downloaded DAT files (auto-created)
+├── launchTool.sh             # Convenience launch script
+├── build.py                  # PyInstaller build script
+├── requirements.txt          # Python dependencies
+├── README.md                 # This file
+└── .gitignore               # Git ignore patterns
 
 ## License
 
