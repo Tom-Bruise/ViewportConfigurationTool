@@ -103,6 +103,31 @@ class CursesGUI:
         if len(self.log_messages) > 1000:
             self.log_messages = self.log_messages[-1000:]
 
+    def sanitize_for_curses(self, text: str) -> str:
+        """Sanitize text for safe display in curses (handles encoding issues)."""
+        if not text:
+            return text
+        # Replace problematic characters with ASCII equivalents
+        replacements = {
+            '\u2019': "'",  # Right single quotation mark
+            '\u2018': "'",  # Left single quotation mark
+            '\u201c': '"',  # Left double quotation mark
+            '\u201d': '"',  # Right double quotation mark
+            '\u2013': '-',  # En dash
+            '\u2014': '-',  # Em dash
+            '\u00a0': ' ',  # Non-breaking space
+            '\u00e9': 'e',  # é
+            '\u00e8': 'e',  # è
+            '\u00ea': 'e',  # ê
+            '\u00e0': 'a',  # à
+            '\u00f1': 'n',  # ñ
+        }
+        for old, new in replacements.items():
+            text = text.replace(old, new)
+        # Remove any remaining non-ASCII characters
+        text = text.encode('ascii', 'ignore').decode('ascii')
+        return text
+
     def save_config(self) -> bool:
         """Save current system configurations to JSON file."""
         try:
@@ -955,15 +980,15 @@ class CursesGUI:
                             # If we can't read the file, assume no override
                             pass
 
-                    # Truncate fields to fit calculated widths
-                    name = game.name[:name_width-1]
-                    desc = game.description[:desc_width-1]
-                    year = game.year[:year_width-1]
-                    mfr = game.manufacturer[:mfr_width-1]
+                    # Sanitize and truncate fields to fit calculated widths
+                    name = self.sanitize_for_curses(game.name)[:name_width-1]
+                    desc = self.sanitize_for_curses(game.description)[:desc_width-1]
+                    year = self.sanitize_for_curses(game.year)[:year_width-1]
+                    mfr = self.sanitize_for_curses(game.manufacturer)[:mfr_width-1]
                     res = f"{game.width}x{game.height}"[:res_width-1]
-                    orient = (game.rotate[:orient_width-1] if game.rotate else "-")
-                    screen = (game.screen_type[:screen_width-1] if game.screen_type else "-")
-                    clone = (game.cloneof[:clone_width-1] if game.cloneof else "-")
+                    orient = (self.sanitize_for_curses(game.rotate)[:orient_width-1] if game.rotate else "-")
+                    screen = (self.sanitize_for_curses(game.screen_type)[:screen_width-1] if game.screen_type else "-")
+                    clone = (self.sanitize_for_curses(game.cloneof)[:clone_width-1] if game.cloneof else "-")
 
                     line = f"{name:<{name_width}} {desc:<{desc_width}} {year:<{year_width}} {mfr:<{mfr_width}} {res:<{res_width}} {orient:<{orient_width}} {screen:<{screen_width}} {clone:<{clone_width}} {rom_status:<{rom_width}} {override_status:<{ovr_width}}"
 
@@ -997,11 +1022,12 @@ class CursesGUI:
 
                     # Show game details
                     self.stdscr.attron(curses.color_pair(5))
-                    game_line = f"Game: {game.name}"
+                    game_line = f"Game: {self.sanitize_for_curses(game.name)}"
                     self.stdscr.addstr(y, 1, game_line[:self.width-2])
                     y += 1
                     if game.description:
-                        desc_display = game.description if len(game.description) <= self.width - 15 else game.description[:self.width-18] + "..."
+                        desc_safe = self.sanitize_for_curses(game.description)
+                        desc_display = desc_safe if len(desc_safe) <= self.width - 15 else desc_safe[:self.width-18] + "..."
                         desc_line = f"Description: {desc_display}"
                         self.stdscr.addstr(y, 1, desc_line[:self.width-2])
                         y += 1
@@ -1010,11 +1036,11 @@ class CursesGUI:
                     if game.year or game.manufacturer:
                         info_line = ""
                         if game.year:
-                            info_line += f"Year: {game.year}"
+                            info_line += f"Year: {self.sanitize_for_curses(game.year)}"
                         if game.manufacturer:
                             if info_line:
                                 info_line += "  |  "
-                            info_line += f"Manufacturer: {game.manufacturer}"
+                            info_line += f"Manufacturer: {self.sanitize_for_curses(game.manufacturer)}"
                         self.stdscr.addstr(y, 1, info_line[:self.width-2])
                         y += 1
 
@@ -1022,16 +1048,16 @@ class CursesGUI:
                     if game.rotate or game.screen_type:
                         display_line = ""
                         if game.rotate:
-                            display_line += f"Orientation: {game.rotate}"
+                            display_line += f"Orientation: {self.sanitize_for_curses(game.rotate)}"
                         if game.screen_type:
                             if display_line:
                                 display_line += "  |  "
-                            display_line += f"Screen: {game.screen_type}"
+                            display_line += f"Screen: {self.sanitize_for_curses(game.screen_type)}"
                         self.stdscr.addstr(y, 1, display_line[:self.width-2])
                         y += 1
 
                     if game.cloneof:
-                        clone_line = f"Clone of: {game.cloneof}"
+                        clone_line = f"Clone of: {self.sanitize_for_curses(game.cloneof)}"
                         self.stdscr.addstr(y, 1, clone_line[:self.width-2])
                         y += 1
 
