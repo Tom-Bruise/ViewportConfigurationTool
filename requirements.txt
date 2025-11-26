@@ -1,0 +1,4 @@
+# Resolution Override Tool Requirements
+
+# Required for building standalone executable
+pyinstaller>=6.0.0
