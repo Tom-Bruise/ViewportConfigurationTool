@@ -10,7 +10,7 @@ Modules:
     cli: Command-line interface for batch processing
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Viewport Configuration Tool Contributors"
 
 from .core import GameInfo, ViewportConfigurationManager

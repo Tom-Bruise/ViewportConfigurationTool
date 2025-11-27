@@ -13,6 +13,7 @@ from typing import List, Optional, Tuple
 
 from .core import GameInfo, ViewportConfigurationManager
 from .network import get_dat_sources, download_dat_file
+from . import __version__
 
 class SystemConfig:
     """Configuration for a single emulation system."""
@@ -623,7 +624,7 @@ class CursesGUI:
 
         while True:
             self.stdscr.clear()
-            self.draw_header("Viewport Configuration Tool - Main Menu")
+            self.draw_header(f"Viewport Configuration Tool v{__version__} - Main Menu")
 
             # Display system overview
             y = 2
@@ -1002,14 +1003,51 @@ class CursesGUI:
                     screen = (self.sanitize_for_curses(game.screen_type)[:screen_width-1] if game.screen_type else "-")
                     clone = (self.sanitize_for_curses(game.cloneof)[:clone_width-1] if game.cloneof else "-")
 
-                    line = f"{name:<{name_width}} {desc:<{desc_width}} {year:<{year_width}} {mfr:<{mfr_width}} {res:<{res_width}} {orient:<{orient_width}} {screen:<{screen_width}} {clone:<{clone_width}} {rom_status:<{rom_width}} {override_status:<{ovr_width}}"
+                    # Build line without ROM and OVR status (will add them separately with colors)
+                    line_base = f"{name:<{name_width}} {desc:<{desc_width}} {year:<{year_width}} {mfr:<{mfr_width}} {res:<{res_width}} {orient:<{orient_width}} {screen:<{screen_width}} {clone:<{clone_width}} "
 
                     if idx == selected:
                         self.stdscr.attron(curses.color_pair(1) | curses.A_BOLD)
-                        self.safe_addstr(y, 0, f">{line}"[:self.width])
+                        self.safe_addstr(y, 0, f">{line_base}")
+                        self.stdscr.attroff(curses.color_pair(1) | curses.A_BOLD)
+
+                        # Add ROM status with color
+                        x_pos = 1 + len(line_base)
+                        if rom_status == "Y":
+                            self.stdscr.attron(curses.color_pair(2) | curses.A_BOLD)  # Green
+                            self.safe_addstr(y, x_pos, f"{rom_status:<{rom_width}}")
+                            self.stdscr.attroff(curses.color_pair(2) | curses.A_BOLD)
+                        elif rom_status == "N":
+                            self.stdscr.attron(curses.color_pair(3) | curses.A_BOLD)  # Red
+                            self.safe_addstr(y, x_pos, f"{rom_status:<{rom_width}}")
+                            self.stdscr.attroff(curses.color_pair(3) | curses.A_BOLD)
+                        else:
+                            self.stdscr.attron(curses.color_pair(1) | curses.A_BOLD)
+                            self.safe_addstr(y, x_pos, f"{rom_status:<{rom_width}}")
+                            self.stdscr.attroff(curses.color_pair(1) | curses.A_BOLD)
+
+                        # Add override status
+                        self.stdscr.attron(curses.color_pair(1) | curses.A_BOLD)
+                        self.safe_addstr(y, x_pos + rom_width, f"{override_status:<{ovr_width}}")
                         self.stdscr.attroff(curses.color_pair(1) | curses.A_BOLD)
                     else:
-                        self.safe_addstr(y, 0, f" {line}"[:self.width])
+                        self.safe_addstr(y, 0, f" {line_base}")
+
+                        # Add ROM status with color
+                        x_pos = 1 + len(line_base)
+                        if rom_status == "Y":
+                            self.stdscr.attron(curses.color_pair(2) | curses.A_BOLD)  # Green
+                            self.safe_addstr(y, x_pos, f"{rom_status:<{rom_width}}")
+                            self.stdscr.attroff(curses.color_pair(2) | curses.A_BOLD)
+                        elif rom_status == "N":
+                            self.stdscr.attron(curses.color_pair(3) | curses.A_BOLD)  # Red
+                            self.safe_addstr(y, x_pos, f"{rom_status:<{rom_width}}")
+                            self.stdscr.attroff(curses.color_pair(3) | curses.A_BOLD)
+                        else:
+                            self.safe_addstr(y, x_pos, f"{rom_status:<{rom_width}}")
+
+                        # Add override status
+                        self.safe_addstr(y, x_pos + rom_width, f"{override_status:<{ovr_width}}")
 
                     y += 1
 
